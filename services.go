@@ -106,7 +106,7 @@ func discordAnnouncer(ctx context.Context, cfg *Config, playerChannel <-chan Res
 
 			var sb strings.Builder
 			sb.Grow(len(responseDTO.Players) * 64)
-			sb.WriteString(fmt.Sprintf("Time: %s\n", time.Now().Format("02.01.2006 15:04:05")))
+			sb.WriteString(fmt.Sprintf("Date: %s\n", time.Now().Format("02.01.2006 15:04:05")))
 			for _, p := range responseDTO.Players {
 				if p.LastSeenIn(cfg.RefreshInterval) {
 					sb.WriteString(p.String())
