@@ -33,14 +33,14 @@ type ServerData struct {
 
 // Player represents a player object
 type Player struct {
-	Name      string     `json:"name"`
-	Clan      string     `json:"clan"`
-	Country   int        `json:"country"`
-	Score     int        `json:"score"`
-	Type      int        `json:"type"`
-	FirstSeen string     `json:"first_seen"`
-	LastSeen  string     `json:"last_seen"`
-	Server    ServerData `json:"server_data"`
+	Name      string      `json:"name"`
+	Clan      string      `json:"clan"`
+	Country   int         `json:"country"`
+	Score     int         `json:"score"`
+	Type      int         `json:"type"`
+	FirstSeen string      `json:"first_seen"`
+	LastSeen  string      `json:"last_seen"`
+	Server    *ServerData `json:"server_data"`
 }
 
 func (p *Player) String() string {
@@ -48,12 +48,12 @@ func (p *Player) String() string {
 	name := WrapInInlineCodeBlock(fmt.Sprintf("%-16s", p.Name))
 	clan := WrapInInlineCodeBlock(fmt.Sprintf(clanFmtStr, p.Clan))
 
-	servername := p.Server.Name
-	l := 36
-	if len(servername) < 36 {
-		l = len(servername)
+	servername := ""
+	if p.Server != nil {
+		servername = p.Server.Name
 	}
-	servername = WrapInInlineCodeBlock(servername[:l])
+
+	servername = WrapInInlineCodeBlock(servername)
 
 	return fmt.Sprintf("%s %s %s on %s\n", Flag(p.Country), name, clan, servername)
 }
@@ -93,38 +93,36 @@ func (p Players) StringFormatList() (sfl []PlayerStringTuple) {
 	sb.WriteString("")
 
 	longestName := 0
-	longestClan := 0
 	longestServerName := 0
 	for _, player := range p {
-		if len(player.Name) > longestName {
-			longestName = len(player.Name)
+		if len([]rune(player.Name)) > longestName {
+			longestName = len([]rune(player.Name))
 		}
-		if len(player.Clan) > longestClan {
-			longestClan = len(player.Clan)
-		}
-		if len(player.Server.Name) > longestServerName {
-			longestServerName = len(player.Server.Name)
+		if player.Server != nil && len([]rune(player.Server.Name)) > longestServerName {
+			longestServerName = len([]rune(player.Server.Name))
 		}
 	}
 
 	sfl = make([]PlayerStringTuple, 0, len(p))
 	for _, player := range p {
 		nameFmtStr := fmt.Sprintf("%%-%ds", longestName)
-		clanFmtStr := fmt.Sprintf("%%-%ds", longestClan)
 
 		name := WrapInInlineCodeBlock(fmt.Sprintf(nameFmtStr, player.Name))
-		clan := WrapInInlineCodeBlock(fmt.Sprintf(clanFmtStr, player.Clan))
 
-		if longestServerName > 36 {
-			longestServerName = 36
+		servername := "(unknown)"
+
+		if player.Server != nil {
+			servername = player.Server.Name
 		}
-		servername := player.Server.Name
+
+		// alignment
 		serverFmtStr := fmt.Sprintf("%%-%ds", longestServerName)
-		servername = WrapInInlineCodeBlock(fmt.Sprintf(serverFmtStr, servername[:longestServerName]))
+		// wrap in monospaced inline code block
+		servername = WrapInInlineCodeBlock(fmt.Sprintf(serverFmtStr, servername))
 
 		sfl = append(sfl, PlayerStringTuple{
 			Player: player,
-			String: fmt.Sprintf("%s %s %s on %s\n", Flag(player.Country), name, clan, servername),
+			String: fmt.Sprintf("%s %s on %s\n", Flag(player.Country), name, servername),
 		})
 
 	}
