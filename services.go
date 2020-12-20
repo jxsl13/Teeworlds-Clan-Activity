@@ -107,11 +107,15 @@ func discordAnnouncer(ctx context.Context, cfg *Config, playerChannel <-chan Res
 			var sb strings.Builder
 			sb.Grow(len(responseDTO.Players) * 64)
 			sb.WriteString(fmt.Sprintf("Date: %s\n", time.Now().Format("02.01.2006 15:04:05")))
-			for _, p := range responseDTO.Players {
+			for _, t := range responseDTO.Players.StringFormatList() {
+				p := t.Player
+				s := t.String
+
 				if p.LastSeenIn(cfg.RefreshInterval) {
-					sb.WriteString(p.String())
+					sb.WriteString(s)
 				}
 			}
+			sb.WriteString("\n")
 
 			_, err = dg.ChannelMessageEdit(channelID, myMessageID, sb.String())
 			if err != nil {
