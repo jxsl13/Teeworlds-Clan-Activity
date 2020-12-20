@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"time"
 )
 
 // ResponseDTO is a data transfer object that maps
@@ -21,5 +23,19 @@ type Player struct {
 }
 
 func (p *Player) String() string {
-	return fmt.Sprintf("```%16s %12s Last seen: %v```", p.Name, p.Clan, p.LastSeen)
+	clanFmtStr := fmt.Sprintf("%%-%ds", len(p.Clan))
+	name := WrapInInlineCodeBlock(fmt.Sprintf("%-22s", p.Name))
+	clan := WrapInInlineCodeBlock(fmt.Sprintf(clanFmtStr, p.Clan))
+
+	return fmt.Sprintf("%s %s %s\n", Flag(p.Country), name, clan)
+}
+
+// LastSeenIn the last x minutes, seconds, hours
+func (p *Player) LastSeenIn(d time.Duration) bool {
+	t, err := time.Parse("2006-01-02 15:04:05", p.LastSeen)
+	if err != nil {
+		log.Printf("Malformed time string LastSeen: %s", p.LastSeen)
+		return true
+	}
+	return time.Since(t) < d
 }

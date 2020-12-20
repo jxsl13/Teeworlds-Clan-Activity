@@ -10,6 +10,7 @@ import (
 type Config struct {
 	DiscordBotToken string
 	DiscordChannel  string
+	Owner           string
 
 	Clanname        string
 	Gametype        string
@@ -46,8 +47,14 @@ func (c *Config) Options() configo.Options {
 		{
 			Key:           "TCA_TEEWORLDS_GAMETYPE",
 			Description:   "The gametype that should be watched.",
-			DefaultValue:  " ",
+			DefaultValue:  "",
 			ParseFunction: configo.DefaultParserString(&c.Gametype),
+		},
+		{
+			Key:           "TCA_OWNER",
+			Description:   "The Discord user that owns the bot.",
+			DefaultValue:  "",
+			ParseFunction: configo.DefaultParserRegex(&c.Owner, `.+#\d{4,4}|`, "Require nick#1234 Discord nick."),
 		},
 		{
 			Key:           "TCA_REFRESH_INTERVAL",

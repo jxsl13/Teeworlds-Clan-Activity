@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -33,6 +34,7 @@ func restConsumer(ctx context.Context, cfg *Config, rChan chan<- ResponseDTO) {
 		log.Fatalf("Malformed request, shutting down....")
 	}
 
+	log.Printf("Fretching data every %s\n", cfg.RefreshInterval.String())
 	ticker := time.NewTicker(cfg.RefreshInterval)
 
 	for {
@@ -40,7 +42,6 @@ func restConsumer(ctx context.Context, cfg *Config, rChan chan<- ResponseDTO) {
 		case <-ctx.Done():
 			log.Println("Shutting down REST API consumer...")
 		case <-ticker.C:
-			log.Println("Fetching data...")
 			resp, err := client.Do(req)
 			if err != nil {
 				log.Printf("Error while fetching data from the status.tw REST API: %v\n", err)
@@ -87,29 +88,29 @@ func discordAnnouncer(ctx context.Context, cfg *Config, playerChannel <-chan Res
 	if err != nil {
 		log.Fatalln("Failed to fetch the configured channelID, please try again.")
 	}
-	messages, err := dg.ChannelMessages(channelID, 100, msg.ID, "", "")
+	myMessageID := msg.ID
+
+	err = cleanupBefore(dg, channelID, myMessageID)
 	if err != nil {
-		log.Fatalf("Failed to fetch messages: %v\n", err)
-	}
-	if len(messages) > 0 {
-		ids := make([]string, 0, len(messages))
-		for _, m := range messages {
-			ids = append(ids, m.ID)
-		}
-		err = dg.ChannelMessagesBulkDelete(channelID, ids)
-		if err != nil {
-			log.Fatalf("Could not delete old messages: %v\n", err)
-		}
+		log.Printf("Failed to cleanup messages before the initial message: %v", err)
 	}
 
-	myMessageID := msg.ID
 	for {
 		select {
 		case responseDTO := <-playerChannel:
+
+			err = cleanupAfter(dg, channelID, myMessageID)
+			if err != nil {
+				log.Printf("Failed to cleanup newer messages: %v", err)
+			}
+
 			var sb strings.Builder
-			sb.Grow(len(responseDTO.Players) * 50)
+			sb.Grow(len(responseDTO.Players) * 64)
+			sb.WriteString(fmt.Sprintf("Time: %s\n", time.Now().Format("02.01.2006 15:04:05")))
 			for _, p := range responseDTO.Players {
-				sb.WriteString(p.String())
+				if p.LastSeenIn(cfg.RefreshInterval) {
+					sb.WriteString(p.String())
+				}
 			}
 
 			_, err = dg.ChannelMessageEdit(channelID, myMessageID, sb.String())
