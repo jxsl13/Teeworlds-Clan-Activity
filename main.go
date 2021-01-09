@@ -8,32 +8,37 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
+	"github.com/jxsl13/Teeworlds-Clan-Activity/config"
+	"github.com/jxsl13/Teeworlds-Clan-Activity/service"
 	configo "github.com/jxsl13/simple-configo"
 )
 
 var (
-	cfg = &Config{}
+	cfg = &config.Config{}
 
 	// context stuff
 	globalCtx, globalCancel = context.WithCancel(context.Background())
 )
 
 func init() {
+	// read env
 	var env map[string]string
 	env, err := godotenv.Read(".env")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// parse configuration
 	if err := configo.Parse(cfg, env); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
-	responses := make(chan ResponseDTO, 128)
-	go restConsumer(globalCtx, cfg, responses)
-	go discordAnnouncer(globalCtx, cfg, responses)
+
+	go service.PlayerListFetcher(globalCtx, cfg)
+	go service.OnlineMembersAnnouncer(globalCtx, cfg)
+	//go service.OnlinePlayersNotifier(globalCtx, cfg)
 
 	// Wait here until CTRL-C or other term signal is received.
 	log.Println("Bot is now running.  Press CTRL-C to exit.")

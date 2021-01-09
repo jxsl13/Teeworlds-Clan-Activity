@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"time"
@@ -12,9 +12,15 @@ type Config struct {
 	DiscordChannel  string
 	Owner           string
 
-	Clanname        string
-	Gametype        string
+	// api request delay
 	RefreshInterval time.Duration
+
+	// clan activity
+	Clanname string
+	Gametype string
+
+	// notification stuff
+	NotificationChannel string
 }
 
 // Name is the name of the configuration
@@ -35,8 +41,14 @@ func (c *Config) Options() configo.Options {
 		{
 			Key:           "TCA_DISCORD_CHANNEL",
 			Mandatory:     true,
-			Description:   "After you gave the bot access to your discord server via the discord website, you cna get a channel ID from your server that can be used here.",
+			Description:   "After you gave the bot access to your discord server via the discord website, you can get a channel ID from your server that can be used here.",
 			ParseFunction: configo.DefaultParserString(&c.DiscordChannel),
+		},
+		{
+			Key:           "TCA_DISCORD_NOTIFICATION_CHANNEL",
+			Description:   "This channel can be used to receive online players notification requests and notify users.",
+			DefaultValue:  "",
+			ParseFunction: configo.DefaultParserString(&c.NotificationChannel),
 		},
 		{
 			Key:           "TCA_TEEWORLDS_CLAN",

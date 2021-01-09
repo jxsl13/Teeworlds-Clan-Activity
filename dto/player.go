@@ -1,4 +1,4 @@
-package main
+package dto
 
 import (
 	"fmt"
@@ -6,30 +6,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/jxsl13/Teeworlds-Clan-Activity/markdown"
 )
-
-// ResponseDTO is a data transfer object that maps
-type ResponseDTO struct {
-	Players Players `json:"players"`
-}
-
-// ServerData that is attached to a player
-type ServerData struct {
-	IP         string `json:"server_ip"`
-	Port       string `json:"server_port"`
-	FirstSeen  string `json:"first_seen"`
-	LastSeen   string `json:"last_seen"`
-	Version    string `json:"version"`
-	Name       string `json:"name"`
-	Password   bool   `json:"password"`
-	SkillLevel int    `json:"server_level"`
-	NumPlayers int    `json:"num_players"`
-	MaxPlayers int    `json:"max_players"`
-	GameType   string `json:"gamemode"`
-	Map        string `json:"map"`
-	Country    string `json:"country"`
-	Master     string `json:"master"`
-}
 
 // Player represents a player object
 type Player struct {
@@ -45,17 +24,17 @@ type Player struct {
 
 func (p *Player) String() string {
 	clanFmtStr := fmt.Sprintf("%%-%ds", len(p.Clan))
-	name := WrapInInlineCodeBlock(fmt.Sprintf("%-16s", p.Name))
-	clan := WrapInInlineCodeBlock(fmt.Sprintf(clanFmtStr, p.Clan))
+	name := markdown.WrapInInlineCodeBlock(fmt.Sprintf("%-16s", p.Name))
+	clan := markdown.WrapInInlineCodeBlock(fmt.Sprintf(clanFmtStr, p.Clan))
 
 	servername := ""
 	if p.Server != nil {
 		servername = p.Server.Name
 	}
 
-	servername = WrapInInlineCodeBlock(servername)
+	servername = markdown.WrapInInlineCodeBlock(servername)
 
-	return fmt.Sprintf("%s %s %s on %s\n", Flag(p.Country), name, clan, servername)
+	return fmt.Sprintf("%s %s %s on %s\n", markdown.Flag(p.Country), name, clan, servername)
 }
 
 // LastSeenIn the last x minutes, seconds, hours
@@ -107,7 +86,7 @@ func (p Players) StringFormatList() (sfl []PlayerStringTuple) {
 	for _, player := range p {
 		nameFmtStr := fmt.Sprintf("%%-%ds", longestName)
 
-		name := WrapInInlineCodeBlock(fmt.Sprintf(nameFmtStr, player.Name))
+		name := markdown.WrapInInlineCodeBlock(fmt.Sprintf(nameFmtStr, player.Name))
 
 		servername := "(unknown)"
 
@@ -118,11 +97,11 @@ func (p Players) StringFormatList() (sfl []PlayerStringTuple) {
 		// alignment
 		serverFmtStr := fmt.Sprintf("%%-%ds", longestServerName)
 		// wrap in monospaced inline code block
-		servername = WrapInInlineCodeBlock(fmt.Sprintf(serverFmtStr, servername))
+		servername = markdown.WrapInInlineCodeBlock(fmt.Sprintf(serverFmtStr, servername))
 
 		sfl = append(sfl, PlayerStringTuple{
 			Player: player,
-			String: fmt.Sprintf("%s %s on %s\n", Flag(player.Country), name, servername),
+			String: fmt.Sprintf("%s %s on %s\n", markdown.Flag(player.Country), name, servername),
 		})
 
 	}

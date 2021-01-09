@@ -1,4 +1,4 @@
-package main
+package service
 
 import (
 	"fmt"
@@ -7,6 +7,10 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 )
+
+func mentionUser(ID string) string {
+	return "<@" + ID + ">"
+}
 
 // SplitChannelMessageSend properly splits long output in order to accepted by the discord servers.
 // also properly wrap single codeblocks that were split during this process
