@@ -36,6 +36,14 @@ func (db *database) RequestNotification(discordUser, ingameNick string) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	if db.requests[ingameNick] == nil {
+		db.requests[ingameNick] = make(map[string]bool)
+	}
+
+	if db.requestingUsers[discordUser] == nil {
+		db.requestingUsers[discordUser] = make(map[string]bool)
+	}
+
 	db.requests[ingameNick][discordUser] = true
 	db.requestingUsers[discordUser][ingameNick] = true
 }
@@ -47,10 +55,7 @@ func (db *database) GetNotificationRequests(discordUser string) []string {
 	return setToSortedList(db.requestingUsers[discordUser])
 }
 
-func (db *database) DeleteNotificationRequest(discordUser, ingameNick string) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
+func (db *database) deleteNotificationRequest(discordUser, ingameNick string) {
 	delete(db.requests[ingameNick], discordUser)
 	if len(db.requests[ingameNick]) == 0 {
 		delete(db.requests, ingameNick)
@@ -60,6 +65,12 @@ func (db *database) DeleteNotificationRequest(discordUser, ingameNick string) {
 	if len(db.requestingUsers[discordUser]) == 0 {
 		delete(db.requestingUsers, discordUser)
 	}
+}
+
+func (db *database) DeleteNotificationRequest(discordUser, ingameNick string) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.deleteNotificationRequest(discordUser, ingameNick)
 }
 
 func (db *database) ClearNotificationRequests(discordUser string) {
@@ -101,17 +112,24 @@ func (db *database) getRequestors(player dto.Player) []string {
 
 func (db *database) ParseResponse(response dto.Response) Notifications {
 	db.mu.RLock()
-	defer db.mu.RLock()
+	defer db.mu.RUnlock()
 
 	result := make(Notifications, 0)
 
 	for _, player := range response.Players {
 		if db.isRequested(player) {
+			requestors := db.getRequestors(player)
 			result = append(result, Notification{
 				Player:     player,
-				Requestors: db.getRequestors(player),
+				Requestors: requestors,
 			})
+
+			// after notifying we do not want the user to get any more notifications
+			for _, requestor := range requestors {
+				db.deleteNotificationRequest(requestor, player.Name)
+			}
 		}
+
 	}
 	sort.Sort(byNotificationNickname(result))
 	return result

@@ -38,7 +38,11 @@ func main() {
 
 	go service.PlayerListFetcher(globalCtx, cfg)
 	go service.OnlineMembersAnnouncer(globalCtx, cfg)
-	//go service.OnlinePlayersNotifier(globalCtx, cfg)
+
+	// optional feature
+	if cfg.NotificationChannel != "" {
+		go service.OnlinePlayersNotifier(globalCtx, cfg)
+	}
 
 	// Wait here until CTRL-C or other term signal is received.
 	log.Println("Bot is now running.  Press CTRL-C to exit.")

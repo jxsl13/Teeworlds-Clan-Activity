@@ -60,11 +60,17 @@ func OnlinePlayersNotifier(ctx context.Context, cfg *config.Config) {
 			for _, n := range notifications {
 				player := markdown.WrapInInlineCodeBlock(n.Player.Name)
 				server := markdown.WrapInInlineCodeBlock(n.Player.Server.Name)
-				header := fmt.Sprintf("%s joined the server %s\n", player, server)
+				header := ""
+				if n.Player.Server == nil {
+					header = fmt.Sprintf("%s joined the server %s\n", player, server)
+				} else {
+					header = fmt.Sprintf("%s joined the game.\n", player)
+				}
+
 				sb.WriteString(header)
 
 				for idx, requestor := range n.Requestors {
-					if idx < len(n.Requestors) {
+					if idx < len(n.Requestors)-1 {
 						sb.WriteString(fmt.Sprintf("%s, ", mentionUser(requestor)))
 					} else {
 						sb.WriteString(fmt.Sprintf("%s", mentionUser(requestor)))
@@ -89,6 +95,9 @@ func OnlinePlayersNotifier(ctx context.Context, cfg *config.Config) {
 func onlinePlayerNotificationRequest(notificationChannelID string) func(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	return func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		if m.Author.ID == s.State.User.ID {
+			return
+		}
 		if m.ChannelID != notificationChannelID {
 			return
 		}
@@ -116,9 +125,10 @@ func onlinePlayerNotificationRequest(notificationChannelID string) func(s *disco
 
 		log.Printf("User: %s requested to be notified when '%s' is online.", m.Author.String(), nickname)
 		notify.RequestNotification(author, nickname)
-		msgText := fmt.Sprintf("%s, you will be notified once '%s' joins a server.", m.Author.Mention(), nickname)
-		if _, err := s.ChannelMessageSend(notificationChannelID, msgText); err != nil {
-			log.Printf("Failed to send notification request received confirmation.")
+		msgText := fmt.Sprintf("%s, you will be notified once %s joins a server.", m.Author.Mention(), markdown.WrapInInlineCodeBlock(nickname))
+		_, err := s.ChannelMessageSend(notificationChannelID, msgText)
+		if err != nil {
+			log.Printf("Error when sending confirmation message to notification channel: %s", err)
 		}
 	}
 }
