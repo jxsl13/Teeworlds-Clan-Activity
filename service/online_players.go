@@ -115,14 +115,20 @@ func onlinePlayerNotificationRequest(notificationChannelID string) func(s *disco
 		author := m.Author.ID
 		text = text[1:]
 		tokens := strings.SplitN(text, " ", 2)
-		if len(tokens) < 2 {
+		if len(tokens) < 1 {
 			return
 		}
 		command := tokens[0]
-		nickname := tokens[1]
+
+		args := ""
+		if len(tokens) > 1 {
+			args = tokens[1]
+		}
 
 		switch command {
 		case "notify":
+			nickname := args
+
 			notify.RequestNotification(author, nickname)
 
 			// delete request message
