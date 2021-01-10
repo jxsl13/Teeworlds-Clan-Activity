@@ -37,8 +37,9 @@ func OnlinePlayersNotifier(ctx context.Context, cfg *config.Config) {
 		return
 	}
 	defer dg.Close()
+	txt := "This is a one tme notification channel. Once the requested player joins the game, you will not receive any more notifications after your initial one.\nWrite `?notify <nickname>` in order to get a notification when that player is online.\nUse `?list` to see all of your notification requests.\nAnd execute `?unnotify_all` to delete all of your notification requests."
 
-	msg, err := dg.ChannelMessageSend(channelID, "Write `?notify <nickname>` in order to get a notification when that player is online.\nAnd write `?unnotify_all` to delete all of your notification requests.")
+	msg, err := dg.ChannelMessageSend(channelID, txt)
 	if err != nil {
 		log.Printf("Failed to fetch the configured channelID, please try again: %s", err)
 		return
@@ -150,11 +151,31 @@ func onlinePlayerNotificationRequest(notificationChannelID string) func(s *disco
 			}
 
 			log.Printf("'%s' requested to delete all notification requests.", m.Author.String())
-			msg, err := s.ChannelMessageSend("%s, your notification requests were deleted.", m.Author.Mention())
+			txt := fmt.Sprintf("%s, your notification requests were deleted.", m.Author.Mention())
+			msg, err := s.ChannelMessageSend(notificationChannelID, txt)
 			if err != nil {
 				log.Printf("Failed to delete notify deletion request message: %s", err)
 			}
 			sleepAndDelete(s, notificationChannelID, msg.ID, 5*time.Second)
+		case "list":
+			list := notify.GetNotificationRequests(author)
+			header := fmt.Sprintf("%s, your notification requests are:\n", m.Author.Mention())
+
+			var sb strings.Builder
+			sb.Grow(len(header) + 18*len(list))
+
+			sb.WriteString(header)
+
+			for _, nickname := range list {
+				sb.WriteString(markdown.WrapInInlineCodeBlock(nickname))
+				sb.WriteString("\n")
+			}
+
+			msg, err := s.ChannelMessageSend(notificationChannelID, sb.String())
+			if err != nil {
+				log.Printf("Failed to delete notify deletion request message: %s", err)
+			}
+			sleepAndDelete(s, notificationChannelID, msg.ID, 15*time.Second)
 		default:
 			return
 		}
