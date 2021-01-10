@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jxsl13/Teeworlds-Clan-Activity/config"
@@ -37,7 +38,7 @@ func OnlinePlayersNotifier(ctx context.Context, cfg *config.Config) {
 	}
 	defer dg.Close()
 
-	msg, err := dg.ChannelMessageSend(channelID, "Write `?notify <nickname>` in order to get a notification when that player is online.")
+	msg, err := dg.ChannelMessageSend(channelID, "Write `?notify <nickname>` in order to get a notification when that player is online.\nAnd write `?unnotify_all` to delete all of your notification requests.")
 	if err != nil {
 		log.Printf("Failed to fetch the configured channelID, please try again: %s", err)
 		return
@@ -119,16 +120,44 @@ func onlinePlayerNotificationRequest(notificationChannelID string) func(s *disco
 		command := tokens[0]
 		nickname := tokens[1]
 
-		if command != "notify" {
+		switch command {
+		case "notify":
+			notify.RequestNotification(author, nickname)
+
+			// delete request message
+			err := s.ChannelMessageDelete(notificationChannelID, m.ID)
+			if err != nil {
+				log.Printf("Failed to delete request message of 'notify': %s", err)
+			}
+			// logging
+			log.Printf("'%s' requested to be notified when '%s' is online.", m.Author.String(), nickname)
+
+			// discord answer
+			msgText := fmt.Sprintf("%s, you will be notified once %s joins a server.", m.Author.Mention(), markdown.WrapInInlineCodeBlock(nickname))
+			msg, err := s.ChannelMessageSend(notificationChannelID, msgText)
+			if err != nil {
+				log.Printf("Error when sending confirmation message to notification channel: %s", err)
+			}
+
+			sleepAndDelete(s, notificationChannelID, msg.ID, 5*time.Second)
+		case "unnotify_all":
+			notify.ClearNotificationRequests(author)
+
+			// delete request message
+			err := s.ChannelMessageDelete(notificationChannelID, m.ID)
+			if err != nil {
+				log.Printf("Failed to delete request message of 'unnotify_all': %s", err)
+			}
+
+			log.Printf("'%s' requested to delete all notification requests.", m.Author.String())
+			msg, err := s.ChannelMessageSend("%s, your notification requests were deleted.", m.Author.Mention())
+			if err != nil {
+				log.Printf("Failed to delete notify deletion request message: %s", err)
+			}
+			sleepAndDelete(s, notificationChannelID, msg.ID, 5*time.Second)
+		default:
 			return
 		}
 
-		log.Printf("'%s' requested to be notified when '%s' is online.", m.Author.String(), nickname)
-		notify.RequestNotification(author, nickname)
-		msgText := fmt.Sprintf("%s, you will be notified once %s joins a server.", m.Author.Mention(), markdown.WrapInInlineCodeBlock(nickname))
-		_, err := s.ChannelMessageSend(notificationChannelID, msgText)
-		if err != nil {
-			log.Printf("Error when sending confirmation message to notification channel: %s", err)
-		}
 	}
 }

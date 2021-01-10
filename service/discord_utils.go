@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -101,4 +102,9 @@ func cleanupBefore(dg *discordgo.Session, channelID, messageID string) error {
 
 func cleanupAfter(dg *discordgo.Session, channelID, messageID string) error {
 	return cleanupMsgs(dg, channelID, 100, "", messageID, "")
+}
+
+func sleepAndDelete(dg *discordgo.Session, channelID, messageID string, duration time.Duration) {
+	time.Sleep(duration)
+	dg.ChannelMessageDelete(channelID, messageID)
 }
