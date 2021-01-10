@@ -123,7 +123,7 @@ func onlinePlayerNotificationRequest(notificationChannelID string) func(s *disco
 			return
 		}
 
-		log.Printf("User: %s requested to be notified when '%s' is online.", m.Author.String(), nickname)
+		log.Printf("'%s' requested to be notified when '%s' is online.", m.Author.String(), nickname)
 		notify.RequestNotification(author, nickname)
 		msgText := fmt.Sprintf("%s, you will be notified once %s joins a server.", m.Author.Mention(), markdown.WrapInInlineCodeBlock(nickname))
 		_, err := s.ChannelMessageSend(notificationChannelID, msgText)
