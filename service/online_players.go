@@ -165,6 +165,13 @@ func onlinePlayerNotificationRequest(notificationChannelID string) func(s *disco
 			sleepAndDelete(s, notificationChannelID, msg.ID, 5*time.Second)
 		case "list":
 			list := notify.GetNotificationRequests(author)
+
+			// delete request message
+			err := s.ChannelMessageDelete(notificationChannelID, m.ID)
+			if err != nil {
+				log.Printf("Failed to delete request message of 'list': %s", err)
+			}
+
 			header := fmt.Sprintf("%s, your notification requests are:\n", m.Author.Mention())
 
 			var sb strings.Builder
